@@ -11,6 +11,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.DoubleConsumer;
 
 public class MainMenu {
     Scanner scanner = new Scanner(System.in);
@@ -44,7 +45,12 @@ public class MainMenu {
         String firstName = scanner.nextLine();
         System.out.println("Last Name");
         String lastName = scanner.nextLine();
-        CustomerService.getInstance().addCustomer(email, firstName, lastName);
+        try {
+            hotelResource.createCustomer(email, firstName, lastName);
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+            createAccount();
+        }
         System.out.println("Account created successfully");
     }
 
@@ -225,6 +231,10 @@ public class MainMenu {
         String roomNumber = scanner.nextLine();
 
         System.out.println("Enter price per night");
+        while(!scanner.hasNextDouble()){
+            System.out.println("Invalid Input, Input price In Double");
+            scanner.nextLine();
+        }
         double roomPrice = scanner.nextDouble();
 
         System.out.println("Enter the room type: 1 for single, 2 for double");
@@ -252,7 +262,6 @@ public class MainMenu {
             addARoom();
         }
     }
-
 
     public void adminMenu() throws InterruptedException, ParseException {
         System.out.println("Loading Admin page Menu...............");
