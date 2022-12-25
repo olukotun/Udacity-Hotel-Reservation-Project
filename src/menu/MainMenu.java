@@ -11,7 +11,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.DoubleConsumer;
 
 public class MainMenu {
     Scanner scanner = new Scanner(System.in);
@@ -20,8 +19,8 @@ public class MainMenu {
     private final HotelResource hotelResource = HotelResource.getInstance();
     SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
 
-    public void run() throws InterruptedException, ParseException, ValidateDateException {
-        while(true) {
+    public void run() throws InterruptedException, ParseException {
+        while (true) {
             displayMainMenu();
             String userChoice = scanner.nextLine();
             switch (userChoice) {
@@ -46,9 +45,13 @@ public class MainMenu {
         System.out.println("Last Name");
         String lastName = scanner.nextLine();
         try {
-            hotelResource.createCustomer(email, firstName, lastName);
-        }catch(Exception e){
-            System.out.println(e.getMessage());
+            Customer customer = hotelResource.getCustomer(email);
+            if (customer != null){
+                System.out.println("This email already exist please create account with a different email");
+                createAccount();
+            }else hotelResource.createCustomer(email, firstName, lastName);
+        } catch (Exception e) {
+            System.out.println("Customer registration failed: " + e.getMessage());
             createAccount();
         }
         System.out.println("Account created successfully");
@@ -59,20 +62,28 @@ public class MainMenu {
         Thread.sleep(2000);
         Date checkIn = null;
         Date checkout = null;
-        while(checkIn == null) {
+        while (checkIn == null) {
             try {
                 System.out.println("Enter Checkin Date mm/dd/yyyy example 02/01/2020");
                 String checkInDate = scanner.nextLine();
                 checkIn = formatter.parse(checkInDate);
+                if (checkIn.before(new Date())) {
+                    checkIn = null;
+                    System.out.println("Check In date can not be in the past");
+                }
             } catch (Exception e) {
                 System.out.println("Invalid checkin date entered");
             }
         }
-        while(checkout == null){
+        while (checkout == null) {
             try {
                 System.out.println("Enter CheckOut Date mm/dd/yyyy example 02/01/2020");
                 String checkOutDate = scanner.nextLine();
                 checkout = formatter.parse(checkOutDate);
+                if (checkout.before(new Date()) || checkout.before(checkIn)) {
+                    checkout = null;
+                    System.out.println("Check out date can not be in the past or Check out date can not come before check in date");
+                }
             } catch (Exception e) {
                 System.out.println("Invalid checkout date");
             }
@@ -85,16 +96,16 @@ public class MainMenu {
             System.out.println("would you like to search another date y/n");
             String response = scanner.nextLine();
             validateUserResponse(response);
-            if (response.equalsIgnoreCase("y")){
+            if (response.equalsIgnoreCase("y")) {
                 findAndReserveARoom();
             }
-        }else {
+        } else {
             getAvailableRooms(availableRooms);
             reserveARoom(checkIn, checkout);
         }
     }
 
-    private void getAvailableRooms(Collection<IRoom> rooms)  {
+    private void getAvailableRooms(Collection<IRoom> rooms) {
         displayAvailableRooms(rooms);
 
     }
@@ -104,7 +115,7 @@ public class MainMenu {
         String response = scanner.nextLine();
         response = validateUserResponse(response);
         if (response.equalsIgnoreCase("y")) {
-            bookARoomForUser(checkIn,checkOut);
+            bookARoomForUser(checkIn, checkOut);
         } else {
             System.out.println("Taking you back to the main menu");
             displayMainMenu();
@@ -112,17 +123,17 @@ public class MainMenu {
 
     }
 
-    private void displayAvailableRooms(Collection<IRoom> rooms){
-            printRoomInformation(rooms);
+    private void displayAvailableRooms(Collection<IRoom> rooms) {
+        printRoomInformation(rooms);
     }
 
-    private void printRoomInformation(Collection<IRoom> rooms){
+    private void printRoomInformation(Collection<IRoom> rooms) {
         AtomicInteger counter = new AtomicInteger(1);
         rooms.forEach(room -> {
             String roomInfo =
                     counter.get() + ". "
                             + "Room Number: " + room.getRoomNumber() + " " + room.getRoomType() + " bed Room "
-                            + "Price: " + "$"+room.getRoomPrice();
+                            + "Price: " + "$" + room.getRoomPrice();
             System.out.println(roomInfo);
             counter.getAndIncrement();
         });
@@ -189,9 +200,9 @@ public class MainMenu {
             customerList.forEach(customer -> {
                 String customerInfo =
                         counter.get() + " "
-                        +"First Name: " + customer.getFirstName() + " "
-                        +"Last Name: " + customer.getLastName() + " "
-                        + "Email: " + customer.getEmail();
+                                + "First Name: " + customer.getFirstName() + " "
+                                + "Last Name: " + customer.getLastName() + " "
+                                + "Email: " + customer.getEmail();
                 System.out.println(customerInfo);
                 counter.getAndIncrement();
             });
@@ -206,21 +217,21 @@ public class MainMenu {
         if (rooms.isEmpty()) {
             System.out.println("There are no current room in the DB");
         } else {
-           printRoomInformation(rooms);
+            printRoomInformation(rooms);
         }
     }
 
     private void getAllReservation() {
-       adminResource.displayAllReservations();
+        adminResource.displayAllReservations();
     }
 
     public String validateUserResponse(String response) {
         boolean notValid = true;
-        while(notValid){
-            if (!(response.equalsIgnoreCase("y") || response.equalsIgnoreCase("n"))){
+        while (notValid) {
+            if (!(response.equalsIgnoreCase("y") || response.equalsIgnoreCase("n"))) {
                 System.out.println("Enter Y (Yes) or N (No)");
                 response = scanner.nextLine();
-            }else notValid = false;
+            } else notValid = false;
         }
         return response;
     }
@@ -231,7 +242,7 @@ public class MainMenu {
         String roomNumber = scanner.nextLine();
 
         System.out.println("Enter price per night");
-        while(!scanner.hasNextDouble()){
+        while (!scanner.hasNextDouble()) {
             System.out.println("Invalid Input, Input price In Double");
             scanner.nextLine();
         }
@@ -241,11 +252,11 @@ public class MainMenu {
         scanner.nextLine();
         String roomType = scanner.nextLine();
 
-        while(true){
-            if (!(roomType.equals("1") || roomType.equals("2"))){
+        while (true) {
+            if (!(roomType.equals("1") || roomType.equals("2"))) {
                 System.out.println("Enter 1 or 2");
                 roomType = scanner.nextLine();
-            }else break;
+            } else break;
         }
         RoomType roomTypeEnum;
         if (roomType.equals("1")) {
@@ -253,12 +264,12 @@ public class MainMenu {
         } else {
             roomTypeEnum = RoomType.DOUBLE;
         }
-        IRoom roomToAdd = new Room(roomNumber, roomPrice, roomTypeEnum,true);
+        IRoom roomToAdd = new Room(roomNumber, roomPrice, roomTypeEnum, true);
         adminResource.addRoom(Collections.singleton(roomToAdd));
         System.out.println("Would you like to add another room y/n");
         String response = scanner.nextLine();
         validateUserResponse(response);
-        if(response.equalsIgnoreCase("y")){
+        if (response.equalsIgnoreCase("y")) {
             addARoom();
         }
     }
@@ -324,7 +335,7 @@ public class MainMenu {
                 String roomNumber = scanner.nextLine();
                 try {
                     IRoom room = hotelResource.getRoom(roomNumber);
-                    while(room == null){
+                    while (room == null) {
                         System.out.println("Please enter a valid room number");
                         roomNumber = scanner.nextLine();
                         room = hotelResource.getRoom(roomNumber);
@@ -333,8 +344,10 @@ public class MainMenu {
                     System.out.println("Room " + roomNumber + " Successfully Reserved loading reservation details.....");
                     adminResource.printReservationDetails(reservation);
                     Thread.sleep(2000);
-                }catch (ValidateDateException e){
+                } catch (ValidateDateException e) {
                     System.out.println(e.getMessage());
+                    System.out.println("Routing to main menu....");
+                    Thread.sleep(2000);
                 }
             }
 
@@ -349,34 +362,36 @@ public class MainMenu {
             }
         }
     }
+
     private void addTestData() throws ParseException, InterruptedException {
         System.out.println("Populating room db with test data..........");
         Collection<IRoom> roomsToBeAdded = Arrays.asList(
-                new Room("100",67.23,RoomType.DOUBLE,true),
-                new Room("200",67.23,RoomType.SINGLE,true),
-                new Room("300",67.23,RoomType.DOUBLE,true),
-                new Room("400",67.23,RoomType.SINGLE,true),
-                new Room("500",67.23,RoomType.DOUBLE,true),
-                new FreeRoom("600",RoomType.SINGLE,true),
-                new FreeRoom("600",RoomType.DOUBLE,true)
-                );
+                new Room("100", 67.23, RoomType.DOUBLE, true),
+                new Room("200", 67.23, RoomType.SINGLE, true),
+                new Room("300", 67.23, RoomType.DOUBLE, true),
+                new Room("400", 67.23, RoomType.SINGLE, true),
+                new Room("500", 67.23, RoomType.DOUBLE, true),
+                new FreeRoom("600", RoomType.SINGLE, true),
+                new FreeRoom("600", RoomType.DOUBLE, true)
+        );
         Thread.sleep(2000);
         System.out.println("populating customer db with test data..........");
         adminResource.addRoom(roomsToBeAdded);
         Collection<Customer> customers = Arrays.asList(
-                new Customer("Oludamilare", "Olukotun","olukotuno@gmail.com"),
-                new Customer("Jeff", "keneth","jeff@gmail.com"));
+                new Customer("Oludamilare", "Olukotun", "olukotuno@gmail.com"),
+                new Customer("Jeff", "keneth", "jeff@gmail.com"));
         customers.forEach(customer -> hotelResource.createCustomer(customer.getEmail(), customer.getFirstName(), customer.getLastName()));
         Thread.sleep(2000);
-        Date checkIn = formatter.parse("12/24/2022");
-        Date checkOut = formatter.parse("12/25/2022");
+        Date checkIn = formatter.parse("12/27/2022");
+        Date checkOut = formatter.parse("12/28/2022");
         System.out.println("populating reservation with a test data.......");
         try {
-            hotelResource.bookARoom(hotelResource.getCustomer("olukotuno@gmail.com"),hotelResource.getRoom("100"),checkIn,checkOut);
-            hotelResource.bookARoom(hotelResource.getCustomer("jeff@gmail.com"),hotelResource.getRoom("300"),checkIn,checkOut);
+            hotelResource.bookARoom(hotelResource.getCustomer("olukotuno@gmail.com"), hotelResource.getRoom("100"), checkIn, checkOut);
+            hotelResource.bookARoom(hotelResource.getCustomer("jeff@gmail.com"), hotelResource.getRoom("300"), checkIn, checkOut);
 
         } catch (ValidateDateException e) {
             System.out.println(e.getMessage());
+            System.out.println("Failed to reserve room");
         }
         Thread.sleep(2000);
         System.out.println("Done with populating test data");

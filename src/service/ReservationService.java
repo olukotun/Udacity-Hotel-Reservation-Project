@@ -25,49 +25,45 @@ public class ReservationService {
 
     public Reservation reserveARoom(Customer customer, IRoom room, Date checkInDate, Date checkOutDate) throws ValidateDateException {
         // validate dates are not in past
-        try {
-            ValidationService.getInstance().validateDate(checkInDate, checkOutDate);
-            // Get existing reservation for current customer
-            Collection<Reservation> existingCustomerReservation = reservationDB.get(customer.getEmail());
+        ValidationService.getInstance().validateDate(checkInDate,checkOutDate);
+        // Get existing reservation for current customer
+        Collection<Reservation> existingCustomerReservation = reservationDB.get(customer.getEmail());
 
-            Reservation reservation = new Reservation(customer, room, checkInDate, checkOutDate);
-            if (existingCustomerReservation != null) {
-                //customer already has a room reserved adding to existing reservation
-                List<String> roomNumberCurrentlyReserved = getExistingReservedRoom();
-                if (roomNumberCurrentlyReserved.contains(room.getRoomNumber())) {
-                    // Get reservations for that particular room
-                    List<Reservation> currentReservationContainingRoom = getReservation(room.getRoomNumber());
-                    // get the latest checkout date before room is available
-                    Date latestCheckoutDate = getCheckOutDateBeforeRoomIsAvailable(currentReservationContainingRoom);
-                    // customer can book the same room if check in date is in the future
-                    if (checkInDate.after(latestCheckoutDate))
-                        reserveRoomForCustomerWithExistingReservation(existingCustomerReservation, reservation, customer.getEmail());
-                    else
-                        throw new ValidateDateException("The earliest date this room is free is " + dateRoomIsAvailable(latestCheckoutDate));
-                } else {
-                    // existing customer booking a different room
-                    // add to existing customer reservation
-                    reserveRoomForCustomerWithExistingReservation(existingCustomerReservation, reservation, customer.getEmail());
-                }
-            } else {
-                // guarding against any sneaker new customer who want to book an existing room
+        Reservation reservation = new Reservation(customer, room, checkInDate, checkOutDate);
+        if (existingCustomerReservation != null) {
+            //customer already has a room reserved adding to existing reservation
+            List<String> roomNumberCurrentlyReserved = getExistingReservedRoom();
+            if (roomNumberCurrentlyReserved.contains(room.getRoomNumber())) {
+                // Get reservations for that particular room
                 List<Reservation> currentReservationContainingRoom = getReservation(room.getRoomNumber());
-                if (currentReservationContainingRoom.isEmpty()) { // if the room is free
-                    reserveRoomForCustomerWithoutExistingReservation(reservation, customer.getEmail());
-                } else {
-                    // if not free check the latest checkout date for the room
-                    Date latestCheckoutDate = getCheckOutDateBeforeRoomIsAvailable(currentReservationContainingRoom);
-                    if (checkInDate.after(latestCheckoutDate))
-                        reserveRoomForCustomerWithoutExistingReservation(reservation, customer.getEmail());
-                    else
-                        throw new RuntimeException("The earliest date this room is free is " + dateRoomIsAvailable(latestCheckoutDate));
-                }
+                // get the latest checkout date before room is available
+                Date latestCheckoutDate = getCheckOutDateBeforeRoomIsAvailable(currentReservationContainingRoom);
+                // customer can book the same room if check in date is in the future
+                if (checkInDate.after(latestCheckoutDate))
+                    reserveRoomForCustomerWithExistingReservation(existingCustomerReservation, reservation, customer.getEmail());
+                else
+                    throw new ValidateDateException("The earliest date this room is free is " + dateRoomIsAvailable(latestCheckoutDate));
+            } else {
+                // existing customer booking a different room
+                // add to existing customer reservation
+                reserveRoomForCustomerWithExistingReservation(existingCustomerReservation, reservation, customer.getEmail());
             }
-            return reservation;
-        }catch (ValidateDateException e){
-            System.out.println(e.getMessage());
+        } else {
+            // guarding against any sneaker new customer who want to book an existing room
+            List<Reservation> currentReservationContainingRoom = getReservation(room.getRoomNumber());
+            if (currentReservationContainingRoom.isEmpty()) { // if the room is free
+                reserveRoomForCustomerWithoutExistingReservation(reservation, customer.getEmail());
+            } else {
+                // if not free check the latest checkout date for the room
+                Date latestCheckoutDate = getCheckOutDateBeforeRoomIsAvailable(currentReservationContainingRoom);
+                if (checkInDate.after(latestCheckoutDate))
+                    reserveRoomForCustomerWithoutExistingReservation(reservation, customer.getEmail());
+                else
+                    throw new RuntimeException("The earliest date this room is free is " + dateRoomIsAvailable(latestCheckoutDate));
+            }
         }
-        return null;
+        return reservation;
+
     }
 
     private void reserveRoomForCustomerWithoutExistingReservation(Reservation reservation, String customerEmail) {

@@ -14,7 +14,7 @@ public class ValidationService {
     }
     public void validateDate(Date checkInDate, Date checkOutDate) throws ValidateDateException {
         if (checkInDate.after(checkOutDate) || checkInDate.before(new Date()) || checkOutDate.before(new Date())) {
-            throw new ValidateDateException("Check out date must be after check In or selected Dates must not be in the past");
+            throw new ValidateDateException("Check out date must be after check In");
         }
     }
 }
