@@ -93,15 +93,35 @@ public class MainMenu {
         Collection<IRoom> availableRooms = hotelResource.findARoom(checkIn, checkout);
         if (availableRooms.isEmpty()) {
             System.out.println("There are no rooms available for these days");
-            System.out.println("would you like to search another date y/n");
-            String response = scanner.nextLine();
-            validateUserResponse(response);
-            if (response.equalsIgnoreCase("y")) {
-                findAndReserveARoom();
-            }
+            Thread.sleep(2000);
+            System.out.println("Loading recommended rooms...........");
+            Thread.sleep(2000);
+            loadRecommendedRooms(checkIn,checkout);
         } else {
             getAvailableRooms(availableRooms);
             reserveARoom(checkIn, checkout);
+        }
+    }
+
+    private void loadRecommendedRooms(Date checkIn, Date checkOut) throws InterruptedException {
+        Calendar recommendedCheckIn = Calendar.getInstance();
+        recommendedCheckIn.setTime(checkIn);
+        recommendedCheckIn.add(Calendar.DAY_OF_MONTH, 7);
+        Calendar recommendedCheckOut = Calendar.getInstance();
+        recommendedCheckOut.setTime(checkOut);
+        recommendedCheckOut.add(Calendar.DAY_OF_MONTH, 7);
+        Collection<IRoom> availableRooms = hotelResource.findARoom(recommendedCheckIn.getTime(), recommendedCheckOut.getTime());
+        if(availableRooms.isEmpty()){
+            System.out.println("There are no recommended room to be displayed");
+        }else {
+            System.out.println("Recommended room for date range " + formatter.format(recommendedCheckIn.getTime()) + " -- " + formatter.format(recommendedCheckOut.getTime()));
+            displayAvailableRooms(availableRooms);
+            System.out.println("Would you live to reserve for this recommended date ? y/n");
+            String response = scanner.nextLine();
+            response = validateUserResponse(response);
+            if (response.equalsIgnoreCase("y")) {
+                reserveARoom(recommendedCheckIn.getTime(), recommendedCheckOut.getTime());
+            }
         }
     }
 
@@ -327,7 +347,6 @@ public class MainMenu {
                 System.out.println("You are not a registered member");
                 System.out.println("Redirecting you to the main menu where you can create an account");
                 Thread.sleep(2000);
-                displayMainMenu();
             } else {
                 System.out.println("user found for " + emailAddress);
                 Thread.sleep(2000);
@@ -346,7 +365,7 @@ public class MainMenu {
                     Thread.sleep(2000);
                 } catch (ValidateDateException e) {
                     System.out.println(e.getMessage());
-                    System.out.println("Routing to main menu....");
+                    reserveARoom(checkIn,checkOut);
                     Thread.sleep(2000);
                 }
             }
@@ -358,7 +377,6 @@ public class MainMenu {
             if (registerAccountResponse.equalsIgnoreCase("y")) {
                 System.out.println("Redirecting you to the main menu where you can create an account");
                 Thread.sleep(2000);
-                displayMainMenu();
             }
         }
     }
